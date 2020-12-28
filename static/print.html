@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <script src="./js/vue.min.js"></script>
+  <script src="./js/jquery.min.js"></script>
+  <script src="./js/qrcode.min.js"></script>
+  <title>Document</title>
+  <style>
+    body,
+    html {
+      padding: 0;
+      margin: 0;
+      font-family:"Microsoft YaHei"; 
+    }
+
+    @page {
+      margin: 0px;
+    }
+
+    .box {
+      margin: 20px auto;
+      
+    }
+    .print-box {
+      display: flex;
+      padding-right: 10px;
+    }
+
+    p {
+      margin: 0;
+    }
+    .fontW {
+     font-weight: 600;
+   }
+    .print-item {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .print-right {
+      width: 100%;
+      margin-left: 6px;
+    }
+    .print-right p{
+     margin: 5px 0;
+  }
+    .count {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+    .print-count {
+      display: flex;
+      align-items: center;
+      margin-top: 14px;
+    }
+    #app{
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id='app'>
+    <div class="box"  :style="'border: 1px solid #000; line-height:' + printParams.lineHeight + 'px;' + 'width:' + (printParams.width -20) + 'px'">
+      <p :style="'font-weight: 600; text-align: center; padding:15px 10px 10px 10px; font-size:' + printParams.MfontSize + 'px'">{{ printParams.plainCode }}
+      </p>
+      <div class="print-box" :style="'font-size:' + printParams.CfontSize + 'px'">
+        <div class="code" style="margin-top: 10px;">
+          <div id="qrcode" style="margin: 0px 10px 0px 5px"></div>
+        </div>
+        <div class="print-right">
+          <div class="print-item">
+            <p style="margin-right:4%">
+              物料编码：<span class="fontW">{{ printParams.materialCode }}</span>
+            </p>
+            <p class="fontW">
+              DATE：<span>{{ printParams.create_time }}</span>
+            </p>
+          </div>
+          <p  class="fontW" style="text-align: justify;">
+            物料描述：<span>{{ printParams.description }}</span>
+          </p>
+          <div class="print-count">
+            <div style="margin-right:4%" class="print-count-box">
+              <p class="fontW" style="margin-bottom: 10px;">
+                LOT：<span  style="word-wrap: break-word">{{ printParams.lot }}</span>
+              </p>
+              <p>
+                数量：<span class="fontW">{{ printParams.count }}</span>
+              </p>
+            </div>
+            <div class="count">
+              <p style="margin-bottom:10px;">数量条码：</p>
+              <div id="qrcodeCount"></div>
+            </div>
+          </div>
+          <p style="text-align: justify;">
+            供方：<span>{{ printParams.supplier }}</span>
+          </p>
+          <p style="text-align: justify;">
+            规格书型号：<span class="fontW">{{ printParams.specification }}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+<script>
+  const {
+    ipcRenderer
+  } = require('electron')
+  new Vue({
+    el: "#app",
+    data: {
+      printParams: '',
+    },
+    mounted() {
+      ipcRenderer.on('webview-print-render', (event, info) => {
+        // 执行渲染
+        this.printParams = info;
+        // 解决多次点击生成重复二维码图片
+        document.getElementById("qrcode").innerHTML = "";
+        document.getElementById("qrcodeCount").innerHTML = "";
+
+        var qrcode = new QRCode(document.getElementById("qrcode"), {
+          render: 'table',
+          text: this.printParams.plainCode,
+          width: this.printParams.eWidth,
+          margin: 1,
+          height: this.printParams.eHeight,
+          correctLevel : QRCode.CorrectLevel.H,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+        });
+        var qrcodeCount = new QRCode(document.getElementById("qrcodeCount"), {
+          text: this.printParams.printCount,
+          width: this.printParams.sWidth,
+          height: this.printParams.sWidth,
+          margin: 1,
+          correctLevel : QRCode.CorrectLevel.H,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+        });
+        ipcRenderer.sendToHost('webview-print-do')
+      })
+    },
+    destroyed(){
+    },
+    methods: {}
+  })
+</script>
+
+</html>
